@@ -1,13 +1,10 @@
 import streamlit as st
 import pandas as pd
 from openpyxl import Workbook, load_workbook
-from openpyxl.utils import get_column_letter
 from openpyxl.drawing.image import Image
 from datetime import datetime
 import os
-
 import mysql.connector
-import streamlit as st
 import time
 
 # Veritabanına bağlanma fonksiyonu
@@ -120,20 +117,6 @@ if st.button('Ürün Ekle'):
     else:
         st.error('Lütfen tüm alanları doldurun!')
 
-# Streamlit Arayüzü
-st.title('Duyar Metal Kalite Sertifikaları Yönetim Sistemi')
-
-# Veriyi kontrol etmek ve göstermek için buton
-if st.button("Veri Güncelle"):
-    while True:
-        # Veritabanındaki yeni veriyi al
-        data = get_new_data_from_db()
-        
-        # Veriyi Streamlit üzerinden göster
-        st.write(data)  # Burada veriyi tablodan veya istediğiniz formatta gösterebilirsiniz
-        
-        time.sleep(5)  # Her 5 saniyede bir veriyi günceller
-
 # Arama / Filtreleme Kısmı
 st.header('Verileri Ara')
 
@@ -154,3 +137,13 @@ if os.path.exists(excel_file):
 
 else:
     st.warning("Henüz veri eklenmedi.")
+
+# Verileri sürekli güncelleme
+st.header('Veri Güncelleme')
+
+# Veritabanındaki verileri güncellemek için buton
+if st.button("Veri Güncelle"):
+    data = get_new_data_from_db()
+    
+    # Veriyi Streamlit üzerinden göster
+    st.write(data)  # Burada veriyi tablodan veya istediğiniz formatta gösterebilirsiniz
