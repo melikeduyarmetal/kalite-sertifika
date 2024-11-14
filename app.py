@@ -6,6 +6,25 @@ from openpyxl.drawing.image import Image
 from datetime import datetime
 import os
 
+import mysql.connector
+import streamlit as st
+import time
+
+# Veritabanına bağlanma fonksiyonu
+def get_new_data_from_db():
+    conn = mysql.connector.connect(
+        host="localhost",       # Veritabanı sunucusunun adresi
+        user="root",            # Kullanıcı adı
+        password="your_password",  # Veritabanı parolanız
+        database="your_database"   # Kullanmak istediğiniz veritabanı adı
+    )
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM sertifikalar ORDER BY eklenme_tarihi DESC")  # Veritabanını sorgula
+    data = cursor.fetchall()  # Veriyi çek
+    cursor.close()
+    conn.close()
+    return data
+
 # Excel dosyasına veriyi kaydetme ve sertifika numarasına köprü ekleme
 def save_to_excel(data, image_folder):
     excel_folder = 'C:/deneme/ExcelDosyalari'
@@ -100,6 +119,20 @@ if st.button('Ürün Ekle'):
         st.success('Yeni ürün başarıyla eklendi ve Excel dosyasına kaydedildi.')
     else:
         st.error('Lütfen tüm alanları doldurun!')
+
+# Streamlit Arayüzü
+st.title('Duyar Metal Kalite Sertifikaları Yönetim Sistemi')
+
+# Veriyi kontrol etmek ve göstermek için buton
+if st.button("Veri Güncelle"):
+    while True:
+        # Veritabanındaki yeni veriyi al
+        data = get_new_data_from_db()
+        
+        # Veriyi Streamlit üzerinden göster
+        st.write(data)  # Burada veriyi tablodan veya istediğiniz formatta gösterebilirsiniz
+        
+        time.sleep(5)  # Her 5 saniyede bir veriyi günceller
 
 # Arama / Filtreleme Kısmı
 st.header('Verileri Ara')
