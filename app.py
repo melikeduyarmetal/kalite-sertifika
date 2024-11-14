@@ -6,23 +6,52 @@ from datetime import datetime
 import os
 import mysql.connector
 import time
+import logging
+from dotenv import load_dotenv
+import os
 
-# Veritabanına bağlanma fonksiyonu
-def get_new_data_from_db():
-    conn = mysql.connector.connect(
-        host="localhost",       # Veritabanı sunucusunun adresi
-        user="root",            # Kullanıcı adı
-        password="your_password",  # Veritabanı parolanız
-        database="your_database"   # Kullanmak istediğiniz veritabanı adı
-    )
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM sertifikalar ORDER BY eklenme_tarihi DESC")  # Veritabanını sorgula
-    data = cursor.fetchall()  # Veriyi çek
-    cursor.close()
-    conn.close()
-    return data
+# .env dosyasını yükle
+load_dotenv()  # Veritabanı bilgilerini burada güvenli bir şekilde saklayabilirsiniz.
 
-# Excel dosyasına veriyi kaydetme ve sertifika numarasına köprü ekleme
+# Veritabanı bağlantısı için sınıf oluşturma
+class DatabaseConnection:
+    def __init__(self):
+        # .env dosyasından alınan bilgiler
+        self.host = os.getenv("DB_HOST", "localhost")
+        self.user = os.getenv("DB_USER", "root")
+        self.password = os.getenv("DB_PASSWORD", "")
+        self.database = os.getenv("DB_NAME", "your_database")
+        self.conn = None
+
+    def connect(self):
+        """Veritabanı bağlantısını başlat."""
+        if self.conn is None:
+            try:
+                self.conn = mysql.connector.connect(
+                    host=self.host,
+                    user=self.user,
+                    password=self.password,
+                    database=self.database
+                )
+            except mysql.connector.Error as err:
+                logging.error(f"Veritabanı bağlantısı başarısız: {err}")
+                raise
+
+    def get_data(self):
+        """Veritabanından veri çek."""
+        self.connect()
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT * FROM sertifikalar ORDER BY eklenme_tarihi DESC")  # Veritabanını sorgula
+        data = cursor.fetchall()  # Veriyi çek
+        cursor.close()
+        return data
+
+    def close_connection(self):
+        """Veritabanı bağlantısını kapat."""
+        if self.conn:
+            self.conn.close()
+
+# Excel dosyasına veri kaydetme ve sertifika numarasına köprü ekleme
 def save_to_excel(data, image_folder):
     excel_folder = 'C:/deneme/ExcelDosyalari'
     os.makedirs(excel_folder, exist_ok=True)
@@ -31,7 +60,6 @@ def save_to_excel(data, image_folder):
     # Dosya mevcutsa, mevcut dosyadaki verileri silip yeni bir sayfa oluştur
     if os.path.exists(excel_file):
         workbook = load_workbook(excel_file)
-        # Eski sayfayı sil ve yeni bir sayfa oluştur
         for sheet in workbook.sheetnames:
             std = workbook[sheet]
             workbook.remove(std)
@@ -115,7 +143,7 @@ if st.button('Ürün Ekle'):
 
         st.success('Yeni ürün başarıyla eklendi ve Excel dosyasına kaydedildi.')
     else:
-        st.error('Lütfen tüm alanları doldurun!')
+        st.error("Lütfen ürün tanımı, kalite, firma ve sertifika numarası alanlarını doldurun.")
 
 # Arama / Filtreleme Kısmı
 st.header('Verileri Ara')
@@ -143,7 +171,12 @@ st.header('Veri Güncelleme')
 
 # Veritabanındaki verileri güncellemek için buton
 if st.button("Veri Güncelle"):
-    data = get_new_data_from_db()
-    
-    # Veriyi Streamlit üzerinden göster
-    st.write(data)  # Burada veriyi tablodan veya istediğiniz formatta gösterebilirsiniz
+    db_connection = DatabaseConnection()
+    try:
+        data = db_connection.get_data()
+        db_connection.close_connection()
+        
+        # Veriyi Streamlit üzerinden göster
+        st.write(data)  # Burada veriyi tablodan veya istediğiniz formatta gösterebilirsiniz
+    except Exception as e:
+        st.error(f"Veri güncelleme işlemi başarısız: {e}")
