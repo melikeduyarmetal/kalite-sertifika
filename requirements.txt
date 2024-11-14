@@ -1,4 +1,4 @@
-pandas==1.5.3
-numpy==1.23.4
 streamlit==1.20.0
-sqlalchemy==2.0.0
+pandas==1.5.3
+openpyxl==3.0.10
+mysql-connector-python==8.0.33
